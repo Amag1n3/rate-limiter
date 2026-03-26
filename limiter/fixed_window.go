@@ -2,8 +2,7 @@ package limiter
 
 import (
 	"context"
-
-	"github.com/amogh/rate-limiter/store"
+	"rate_limiter/store"
 )
 
 type FixedWindow struct {
