@@ -3,12 +3,26 @@ package middleware
 import (
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Amag1n3/rate-limiter/limiter"
 )
 
-func RateLimit(l limiter.Limiter) func(http.Handler) http.Handler {
+// RateLimit returns an HTTP middleware that enforces the given limiter.
+// An optional window duration sets the Retry-After header value on 429 responses.
+// If omitted, Retry-After defaults to "1".
+func RateLimit(l limiter.Limiter, window ...time.Duration) func(http.Handler) http.Handler {
+	retryAfter := "1"
+	if len(window) > 0 && window[0] > 0 {
+		secs := int(window[0].Seconds())
+		if secs < 1 {
+			secs = 1
+		}
+		retryAfter = strconv.Itoa(secs)
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key := rateLimitKey(r)
@@ -20,7 +34,7 @@ func RateLimit(l limiter.Limiter) func(http.Handler) http.Handler {
 			}
 
 			if !allowed {
-				w.Header().Set("Retry-After", "1")
+				w.Header().Set("Retry-After", retryAfter)
 				http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
 				return
 			}

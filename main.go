@@ -16,6 +16,7 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
+
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
@@ -30,7 +31,8 @@ func main() {
 		}
 
 		responseBody := "OK - " + strings.ReplaceAll(route.Algorithm, "_", " ")
-		mux.Handle(path, middleware.RateLimit(rateLimiter)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		mux.Handle(path, middleware.RateLimit(rateLimiter, route.Window)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write([]byte(responseBody))
 		})))
 	}
@@ -41,6 +43,7 @@ func main() {
 	if fixedWindowBackend() == "redis" {
 		log.Printf("redis address: %s", getenv("REDIS_ADDR", "localhost:6379"))
 	}
+
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
@@ -59,7 +62,6 @@ func newStore(window time.Duration) store.Store {
 	if fixedWindowBackend() == "redis" {
 		return store.NewRedisStore(getenv("REDIS_ADDR", "localhost:6379"), window)
 	}
-
 	return store.NewMemoryStore(window)
 }
 
@@ -67,7 +69,6 @@ func fixedWindowBackend() string {
 	if strings.EqualFold(strings.TrimSpace(os.Getenv("RATE_LIMIT_STORE")), "redis") {
 		return "redis"
 	}
-
 	return "memory"
 }
 
@@ -76,6 +77,5 @@ func getenv(key, fallback string) string {
 	if value == "" {
 		return fallback
 	}
-
 	return value
 }
