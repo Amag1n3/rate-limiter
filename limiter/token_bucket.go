@@ -27,6 +27,10 @@ func NewTokenBucket(capacity int, refillRate time.Duration) *TokenBucket {
 }
 
 func (tb *TokenBucket) Allow(ctx context.Context, key string) (bool, error) {
+	if tb.capacity <= 0 {
+		return false, nil
+	}
+
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
 
@@ -51,7 +55,7 @@ func (tb *TokenBucket) Allow(ctx context.Context, key string) (bool, error) {
 		if b.tokens > tb.capacity {
 			b.tokens = tb.capacity
 		}
-		b.lastRefill = now
+		b.lastRefill = b.lastRefill.Add(time.Duration(tokensToAdd) * tb.refillRate)
 	}
 
 	// Check if request can be served

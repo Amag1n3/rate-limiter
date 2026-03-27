@@ -1,4 +1,4 @@
-module rate_limiter
+module github.com/Amag1n3/rate-limiter
 
 go 1.25.7
 
