@@ -183,10 +183,26 @@ go test -race ./...
 # With coverage
 go test -race -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
+```
 
-# Benchmarks
+---
+
+## Benchmarks
+
+```bash
 go test -bench=. -benchmem ./...
 ```
+
+Results on AMD Ryzen 7 7840U:
+
+```
+BenchmarkFixedWindowAllow-16          16554738     73.74 ns/op    0 B/op    0 allocs/op
+BenchmarkFixedWindowAllowParallel-16   9412910    127.80 ns/op    0 B/op    0 allocs/op
+BenchmarkTokenBucketAllow-16          19769338     56.72 ns/op    0 B/op    0 allocs/op
+BenchmarkTokenBucketAllowParallel-16  10148334    118.40 ns/op    0 B/op    0 allocs/op
+```
+
+Both algorithms are **zero-allocation under concurrent load** — no heap pressure, no GC pauses at request time.
 
 ---
 
