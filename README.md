@@ -3,7 +3,6 @@
 A production-grade HTTP rate limiting library in Go — pluggable algorithms, Redis-backed distributed storage, per-client enforcement, and zero external framework dependencies.
 
 [![Go Version](https://img.shields.io/badge/go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Amag1n3/rate-limiter)](https://goreportcard.com/report/github.com/Amag1n3/rate-limiter)
 
 ---
