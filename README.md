@@ -3,7 +3,7 @@
 A production-grade HTTP rate limiting library in Go — pluggable algorithms, Redis-backed distributed storage, per-client enforcement, and zero external framework dependencies.
 
 [![Go Version](https://img.shields.io/badge/go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Amag1n3/rate-limiter)](https://goreportcard.com/report/github.com/Amag1n3/rate-limiter)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ---
 
@@ -16,6 +16,38 @@ A production-grade HTTP rate limiting library in Go — pluggable algorithms, Re
 - **Correct HTTP semantics** — 429 responses include a `Retry-After` header reflecting the actual window duration
 - **Race-tested** — concurrent correctness verified with Go's `-race` detector
 - **Docker + Compose ready** — single command to spin up app + Redis
+
+---
+
+## Usage as a Library
+
+```go
+import (
+    "net/http"
+    "time"
+
+    "github.com/Amag1n3/rate-limiter/limiter"
+    "github.com/Amag1n3/rate-limiter/middleware"
+    "github.com/Amag1n3/rate-limiter/store"
+)
+
+func main() {
+    // Fixed window: 100 requests per minute per client
+    fw := limiter.NewFixedWindow(store.NewMemoryStore(time.Minute), 100)
+
+    // Token bucket: burst of 20, refill 1 token/sec
+    tb := limiter.NewTokenBucket(20, time.Second)
+
+    mux := http.NewServeMux()
+
+    // Middleware automatically keys by path + client IP
+    // and sets Retry-After on 429 responses
+    mux.Handle("/api/read",  middleware.RateLimit(fw, time.Minute)(readHandler))
+    mux.Handle("/api/write", middleware.RateLimit(tb, time.Second)(writeHandler))
+
+    http.ListenAndServe(":8080", mux)
+}
+```
 
 ---
 
@@ -77,7 +109,6 @@ Server starts on `:8080`. Available endpoints:
 |---|---|---|
 | `GET /api/fixed` | Fixed Window | 5 req / 10s |
 | `GET /api/token` | Token Bucket | 10 cap, 1 token/s refill |
-| `GET /healthz` | — | — |
 
 **Try it:**
 
@@ -141,38 +172,6 @@ docker compose up
 
 ---
 
-## Usage as a Library
-
-```go
-import (
-    "net/http"
-    "time"
-
-    "github.com/Amag1n3/rate-limiter/limiter"
-    "github.com/Amag1n3/rate-limiter/middleware"
-    "github.com/Amag1n3/rate-limiter/store"
-)
-
-func main() {
-    // Fixed window: 100 requests per minute per client
-    fw := limiter.NewFixedWindow(store.NewMemoryStore(time.Minute), 100)
-
-    // Token bucket: burst of 20, refill 1 token/sec
-    tb := limiter.NewTokenBucket(20, time.Second)
-
-    mux := http.NewServeMux()
-
-    // Middleware automatically keys by path + client IP
-    // and sets Retry-After on 429 responses
-    mux.Handle("/api/read",  middleware.RateLimit(fw, time.Minute)(readHandler))
-    mux.Handle("/api/write", middleware.RateLimit(tb, time.Second)(writeHandler))
-
-    http.ListenAndServe(":8080", mux)
-}
-```
-
----
-
 ## Tests
 
 ```bash
@@ -191,8 +190,6 @@ go tool cover -html=coverage.out
 ```bash
 go test -bench=. -benchmem ./...
 ```
-
-Results on AMD Ryzen 7 7840U:
 
 ```
 BenchmarkFixedWindowAllow-16          16554738     73.74 ns/op    0 B/op    0 allocs/op
